@@ -1,97 +1,162 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
-type Variant = 'avatar' | 'cover' | 'wide';
-
-interface Props {
-  label: string;
-  value: string;
+interface ImageUploadProps {
+  label?: string;
+  value: string;                 // رابط الصورة أو بيانات base64
   onChange: (value: string) => void;
-  variant?: Variant;
-  maxSize?: number;
+  /** أقصى عرض للصورة بالبكسل قبل الضغط (افتراضي 800) */
+  maxWidth?: number;
+  /** نسبة العرض إلى الارتفاع للمعاينة، مثل "3/4" أو "1/1" */
+  aspect?: string;
 }
 
-const aspectClass: Record<Variant, string> = {
-  avatar: 'aspect-square max-w-[160px]',
-  cover: 'aspect-[3/4] max-w-[160px]',
-  wide: 'aspect-video max-w-xs',
-};
-
-function resizeImage(file: File, maxPx: number): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
-      const w = Math.round(img.width * scale);
-      const h = Math.round(img.height * scale);
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
-      URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL('image/jpeg', 0.82));
-    };
-    img.onerror = reject;
-    img.src = url;
-  });
-}
-
-export default function ImageUpload({ label, value, onChange, variant = 'cover', maxSize = 800 }: Props) {
+/**
+ * مكوّن رفع الصور: يتيح اختيار صورة من الجهاز أو لصق رابط.
+ * يقوم بضغط الصورة وتحويلها إلى صيغة base64 لتُحفظ محلياً (localStorage) بدون خادم.
+ */
+export default function ImageUpload({
+  label = 'الصورة',
+  value,
+  onChange,
+  maxWidth = 800,
+  aspect = '3/4',
+}: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [mode, setMode] = useState<'upload' | 'url'>('upload');
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const dataUrl = await resizeImage(file, maxSize);
-      onChange(dataUrl);
-    } catch {
-      // fall back to raw data URL if canvas fails
-      const reader = new FileReader();
-      reader.onload = ev => onChange(ev.target?.result as string);
-      reader.readAsDataURL(file);
+  const handleFile = (file: File) => {
+    setError('');
+    if (!file.type.startsWith('image/')) {
+      setError('الرجاء اختيار ملف صورة صالح');
+      return;
     }
-    e.target.value = '';
+    setLoading(true);
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          let { width, height } = img;
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            onChange(String(e.target?.result || ''));
+            setLoading(false);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          onChange(dataUrl);
+        } catch {
+          onChange(String(e.target?.result || ''));
+        }
+        setLoading(false);
+      };
+      img.onerror = () => {
+        setError('تعذّر قراءة الصورة');
+        setLoading(false);
+      };
+      img.src = String(e.target?.result || '');
+    };
+    reader.onerror = () => {
+      setError('تعذّر تحميل الملف');
+      setLoading(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFile(file);
   };
 
   return (
     <div>
-      <label className="mb-1 block text-sm font-bold text-gray-700">{label}</label>
+      {label && <label className="mb-1 block text-sm font-bold text-gray-700">{label}</label>}
+
+      {/* تبديل بين الرفع والرابط */}
+      <div className="mb-2 flex gap-2">
+        <button
+          type="button"
+          onClick={() => setMode('upload')}
+          className={`rounded-lg px-3 py-1 text-xs font-bold transition-colors ${mode === 'upload' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}
+        >
+          📁 رفع صورة
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('url')}
+          className={`rounded-lg px-3 py-1 text-xs font-bold transition-colors ${mode === 'url' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}
+        >
+          🔗 رابط
+        </button>
+      </div>
+
       <div className="flex items-start gap-3">
-        {value ? (
-          <div className={`relative overflow-hidden rounded-lg border bg-gray-100 ${aspectClass[variant]}`}>
-            <img src={value} alt={label} className="h-full w-full object-cover" />
+        {/* معاينة */}
+        <div
+          className="flex-shrink-0 overflow-hidden rounded-lg border bg-gray-50"
+          style={{ width: 80, aspectRatio: aspect }}
+        >
+          {value ? (
+            <img src={value} alt="معاينة" className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-2xl text-gray-300">🖼️</div>
+          )}
+        </div>
+
+        <div className="flex-1">
+          {mode === 'upload' ? (
+            <div
+              onDrop={onDrop}
+              onDragOver={e => e.preventDefault()}
+              onClick={() => inputRef.current?.click()}
+              className="cursor-pointer rounded-lg border-2 border-dashed border-gray-300 p-4 text-center transition-colors hover:border-blue-400 hover:bg-blue-50"
+            >
+              <input ref={inputRef} type="file" accept="image/*" onChange={onInputChange} className="hidden" />
+              {loading ? (
+                <p className="text-sm text-blue-600">⏳ جاري المعالجة...</p>
+              ) : (
+                <p className="text-sm text-gray-500">انقر لاختيار صورة أو اسحبها هنا</p>
+              )}
+            </div>
+          ) : (
+            <input
+              type="text"
+              value={value}
+              onChange={e => onChange(e.target.value)}
+              placeholder="https://..."
+              className="w-full rounded-lg border p-2.5 text-sm"
+              dir="ltr"
+            />
+          )}
+
+          {value && (
             <button
               type="button"
               onClick={() => onChange('')}
-              className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-xs text-white hover:bg-black/70"
-              title="إزالة الصورة"
+              className="mt-2 text-xs text-red-500 hover:text-red-600"
             >
-              ✕
+              🗑️ إزالة الصورة
             </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className={`flex items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 text-gray-400 transition-colors hover:border-blue-400 hover:text-blue-500 ${aspectClass[variant]}`}
-          >
-            <span className="text-center text-xs leading-tight">
-              📷<br />رفع صورة
-            </span>
-          </button>
-        )}
-        {value && (
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="mt-1 rounded-lg border px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
-          >
-            تغيير
-          </button>
-        )}
+          )}
+          {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+        </div>
       </div>
-      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
     </div>
   );
 }
