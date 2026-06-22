@@ -4,6 +4,7 @@ import { useNavigate } from './Router';
 import { FONT_OPTIONS, COLOR_OPTIONS, SOCIAL_PLATFORMS, WRITER_TYPES, PUBLICATION_CATEGORIES, FORUM_CATEGORIES } from '../types';
 import type { SiteSettings, Writer, Publication, NewsItem, BoardMember, SocialLink, MagazineIssue, LibraryBook, ForumTopic } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import ImageUpload from './ImageUpload';
 
 type Tab = 'general' | 'submissions' | 'writers' | 'publications' | 'magazine' | 'library' | 'forums' | 'board' | 'news' | 'appearance' | 'social' | 'tools';
 
@@ -123,8 +124,8 @@ function GeneralTab() {
         <Field label="اسم الموقع" value={s.siteName} onChange={v => up('siteName', v)} />
         <Field label="الاسم بالإنجليزية" value={s.siteNameEn} onChange={v => up('siteNameEn', v)} ltr />
         <Field label="شعار (رمز تعبيري)" value={s.siteLogo} onChange={v => up('siteLogo', v)} />
-        <Field label="صورة الشعار (رابط)" value={s.logoImage} onChange={v => up('logoImage', v)} ltr />
-        <Field label="صورة الغلاف (رابط)" value={s.coverImage} onChange={v => up('coverImage', v)} ltr />
+        <ImageUpload label="صورة الشعار" value={s.logoImage} onChange={v => up('logoImage', v)} variant="avatar" maxSize={500} />
+        <ImageUpload label="صورة الغلاف" value={s.coverImage} onChange={v => up('coverImage', v)} variant="wide" maxSize={1600} />
         <Field label="الرابط الرسمي للموقع" value={s.officialUrl} onChange={v => up('officialUrl', v)} ltr />
         <div className="md:col-span-2"><Field label="وصف الموقع" value={s.siteDescription} onChange={v => up('siteDescription', v)} area /></div>
         <div className="md:col-span-2"><Field label="نبذة (من نحن)" value={s.aboutText} onChange={v => up('aboutText', v)} area /></div>
@@ -274,7 +275,7 @@ function WritersTab() {
               {WRITER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
-          <Field label="صورة (رابط)" value={w.image} onChange={v => updateWriter(w.id, { image: v })} ltr />
+          <ImageUpload label="صورة الأديب" value={w.image} onChange={v => updateWriter(w.id, { image: v })} variant="avatar" maxSize={500} />
           <Field label="سنة الميلاد" value={w.birthYear} onChange={v => updateWriter(w.id, { birthYear: v })} />
           <div className="md:col-span-2"><Field label="نبذة" value={w.bio} onChange={v => updateWriter(w.id, { bio: v })} area /></div>
           <div className="md:col-span-2 rounded-lg bg-blue-50 p-3">
@@ -318,7 +319,7 @@ function PublicationsTab() {
               {PUBLICATION_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
-          <Field label="صورة الغلاف (رابط)" value={p.coverImage} onChange={v => updatePublication(p.id, { coverImage: v })} ltr />
+          <ImageUpload label="صورة الغلاف" value={p.coverImage} onChange={v => updatePublication(p.id, { coverImage: v })} variant="cover" maxSize={800} />
           <Field label="رابط الملف PDF" value={p.pdfUrl} onChange={v => updatePublication(p.id, { pdfUrl: v })} ltr />
           <Field label="السنة" value={p.year} onChange={v => updatePublication(p.id, { year: v })} />
           <div className="md:col-span-2"><Field label="الوصف" value={p.description} onChange={v => updatePublication(p.id, { description: v })} area /></div>
@@ -344,7 +345,7 @@ function BoardTab() {
         <div key={m.id} className="grid gap-3 rounded-xl bg-white p-4 shadow-md md:grid-cols-2">
           <Field label="الاسم" value={m.name} onChange={v => updateBoardMember(m.id, { name: v })} />
           <Field label="المنصب" value={m.position} onChange={v => updateBoardMember(m.id, { position: v })} />
-          <Field label="صورة (رابط)" value={m.image} onChange={v => updateBoardMember(m.id, { image: v })} ltr />
+          <ImageUpload label="صورة العضو" value={m.image} onChange={v => updateBoardMember(m.id, { image: v })} variant="avatar" maxSize={500} />
           <div className="md:col-span-2"><Field label="نبذة" value={m.bio} onChange={v => updateBoardMember(m.id, { bio: v })} area /></div>
           <div className="md:col-span-2 rounded-lg bg-blue-50 p-3">
             <p className="mb-2 text-sm font-bold text-blue-700">🔑 بيانات دخول العضو (لإضافة الأعمال لأي قسم)</p>
@@ -376,7 +377,7 @@ function MagazineTab() {
           <Field label="عنوان العدد" value={m.title} onChange={v => updateMagazine(m.id, { title: v })} />
           <Field label="رقم العدد" value={m.issueNumber} onChange={v => updateMagazine(m.id, { issueNumber: v })} />
           <Field label="تاريخ الإصدار" value={m.date} onChange={v => updateMagazine(m.id, { date: v })} type="date" ltr />
-          <Field label="صورة الغلاف (رابط)" value={m.coverImage} onChange={v => updateMagazine(m.id, { coverImage: v })} ltr />
+          <ImageUpload label="صورة الغلاف" value={m.coverImage} onChange={v => updateMagazine(m.id, { coverImage: v })} variant="cover" maxSize={800} />
           <Field label="رابط قراءة/تحميل العدد (PDF)" value={m.pdfUrl} onChange={v => updateMagazine(m.id, { pdfUrl: v })} ltr />
           <div className="md:col-span-2"><Field label="الوصف" value={m.description} onChange={v => updateMagazine(m.id, { description: v })} area /></div>
           <div className="md:col-span-2 text-left">
@@ -408,7 +409,7 @@ function LibraryTab() {
             </select>
           </div>
           <Field label="السنة" value={b.year} onChange={v => updateLibraryBook(b.id, { year: v })} />
-          <Field label="صورة الغلاف (رابط)" value={b.coverImage} onChange={v => updateLibraryBook(b.id, { coverImage: v })} ltr />
+          <ImageUpload label="صورة الغلاف" value={b.coverImage} onChange={v => updateLibraryBook(b.id, { coverImage: v })} variant="cover" maxSize={800} />
           <Field label="رابط الملف PDF" value={b.pdfUrl} onChange={v => updateLibraryBook(b.id, { pdfUrl: v })} ltr />
           <div className="md:col-span-2"><Field label="الوصف" value={b.description} onChange={v => updateLibraryBook(b.id, { description: v })} area /></div>
           <div className="md:col-span-2 text-left">
@@ -464,7 +465,7 @@ function NewsTab() {
         <div key={n.id} className="grid gap-3 rounded-xl bg-white p-4 shadow-md md:grid-cols-2">
           <Field label="العنوان" value={n.title} onChange={v => updateNews(n.id, { title: v })} />
           <Field label="التاريخ" value={n.date} onChange={v => updateNews(n.id, { date: v })} type="date" ltr />
-          <Field label="صورة (رابط)" value={n.image} onChange={v => updateNews(n.id, { image: v })} ltr />
+          <ImageUpload label="صورة الخبر" value={n.image} onChange={v => updateNews(n.id, { image: v })} variant="wide" maxSize={1200} />
           <div className="md:col-span-2"><Field label="المحتوى" value={n.content} onChange={v => updateNews(n.id, { content: v })} area /></div>
           <div className="md:col-span-2 text-left">
             <button onClick={() => { if (confirm(`حذف ${n.title}؟`)) deleteNews(n.id); }} className="rounded-lg bg-red-500 px-4 py-2 text-sm text-white hover:bg-red-600">🗑️ حذف</button>
@@ -511,13 +512,8 @@ function AppearanceTab() {
             </label>
             <p className="mt-2 text-xs text-gray-400">عند التفعيل تظهر خلفية مائية بطراز حضاري خلف صفحات الموقع.</p>
           </div>
-          <Field label="رابط صورة الخلفية" value={s.bgImage} onChange={v => up('bgImage', v)} ltr />
+          <ImageUpload label="صورة الخلفية" value={s.bgImage} onChange={v => up('bgImage', v)} variant="wide" maxSize={1600} />
         </div>
-        {s.bgPatternEnabled && s.bgImage && (
-          <div className="mt-4 overflow-hidden rounded-lg border">
-            <img src={s.bgImage} alt="معاينة الخلفية" className="h-40 w-full object-cover" />
-          </div>
-        )}
       </div>
     </div>
   );
