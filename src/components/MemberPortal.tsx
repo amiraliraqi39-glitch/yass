@@ -3,6 +3,7 @@ import { useApp } from '../store';
 import { useNavigate } from './Router';
 import { PUBLICATION_CATEGORIES } from '../types';
 import type { SubmissionTarget } from '../types';
+import ImageUpload from './ImageUpload';
 
 const TARGET_LABELS: Record<SubmissionTarget, string> = {
   publications: 'المنشورات الأدبية',
@@ -107,10 +108,7 @@ export default function MemberPortal() {
                   {PUBLICATION_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
-              <div>
-                <label className="mb-1 block text-sm font-bold text-gray-700">صورة الغلاف (رابط)</label>
-                <input type="text" value={coverImage} onChange={e => setCoverImage(e.target.value)} className="w-full rounded-lg border p-3" dir="ltr" placeholder="https://..." />
-              </div>
+              <ImageUpload label="صورة الغلاف" value={coverImage} onChange={setCoverImage} variant="cover" maxSize={800} />
               <div>
                 <label className="mb-1 block text-sm font-bold text-gray-700">رابط الملف PDF</label>
                 <input type="text" value={pdfUrl} onChange={e => setPdfUrl(e.target.value)} className="w-full rounded-lg border p-3" dir="ltr" placeholder="https://..." />
