@@ -1,18 +1,21 @@
 backend:
   name: git-gateway
-  branch: main # تأكد أن هذا هو اسم الفرع الرئيسي لديك
+  branch: main
 
-media_folder: "public/images" # مكان حفظ الصور في GitHub
-public_folder: "/images" # المسار الذي سيقرأ منه الموقع الصور
+media_folder: "public/images"
+public_folder: "/images"
 
 collections:
   - name: "publications"
     label: "المنشورات الأدبية"
     folder: "content/publications"
     create: true
+    # هذا السطر يقوم بإنشاء ملف JSON تلقائياً ليقرأه الموقع
+    format: "json" 
+    extension: "json"
     fields:
-      - { label: "نوع العمل (رواية، شعر، الخ)", name: "type", widget: "string" }
+      - { label: "نوع العمل", name: "type", widget: "string" }
       - { label: "العنوان", name: "title", widget: "string" }
       - { label: "المؤلف", name: "author", widget: "string" }
       - { label: "الوصف", name: "description", widget: "text" }
-      - { label: "صورة الغلاف", name: "image", widget: "image" } # هذا هو الزر الذي سيرفع الصور مباشرة
+      - { label: "صورة الغلاف", name: "image", widget: "image" }
