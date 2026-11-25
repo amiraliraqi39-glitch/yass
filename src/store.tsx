@@ -129,6 +129,7 @@ interface AppContextType {
   // Auth + tools
   toggleAdmin: () => Promise<void>;
   login: (password: string) => Promise<boolean>;
+  changeAdminPassword: (currentPassword: string, newPassword: string) => Promise<void>;
   exportData: () => string;
   importData: (json: string) => boolean;
   resetAll: () => void;
@@ -490,6 +491,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setState(prev => ({ ...prev, isAdmin: true }));
     return true;
   }, []);
+  const changeAdminPassword = useCallback(async (currentPassword: string, newPassword: string) => {
+    const response = await fetch('/.netlify/functions/admin-auth', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    if (!response.ok) {
+      const result = await response.json().catch(() => null);
+      throw new Error(result?.error ?? `تعذر تغيير كلمة المرور (${response.status}).`);
+    }
+  }, []);
   const exportData = useCallback(() => {
     return JSON.stringify({
       siteSettings: state.siteSettings,
@@ -536,7 +548,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addLibraryBook, updateLibraryBook, deleteLibraryBook,
       addForumTopic, updateForumTopic, deleteForumTopic,
       memberLogin, memberLogout, submitContent, approveSubmission, rejectSubmission, deleteSubmission,
-      toggleAdmin, login, exportData, importData, resetAll,
+      toggleAdmin, login, changeAdminPassword, exportData, importData, resetAll,
     }}>
       {children}
     </AppContext.Provider>
