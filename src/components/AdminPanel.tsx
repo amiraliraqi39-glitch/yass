@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { useApp } from '../store';
 import { useNavigate } from './Router';
 import { FONT_OPTIONS, COLOR_OPTIONS, SOCIAL_PLATFORMS, WRITER_TYPES, PUBLICATION_CATEGORIES, FORUM_CATEGORIES } from '../types';
@@ -637,11 +638,16 @@ function SocialTab() {
 
 /* ===== Tools Tab ===== */
 function ToolsTab() {
-  const { exportData, importData, resetAll, syncStatus, syncMessage } = useApp();
+  const { exportData, importData, resetAll, changeAdminPassword, syncStatus, syncMessage } = useApp();
   const [importText, setImportText] = useState('');
   const [msg, setMsg] = useState('');
   const [copied, setCopied] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordMessage, setPasswordMessage] = useState('');
+  const [passwordSaving, setPasswordSaving] = useState(false);
 
   const handleExport = () => {
     navigator.clipboard.writeText(exportData()).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
@@ -657,6 +663,27 @@ function ToolsTab() {
     if (importData(importText)) { setMsg('✓ تم الاستيراد بنجاح'); setImportText(''); }
     else setMsg('✗ خطأ في تنسيق البيانات');
   };
+  const handleChangePassword = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setPasswordMessage('');
+    if (newPassword !== confirmPassword) {
+      setPasswordMessage('كلمتا المرور الجديدتان غير متطابقتين.');
+      return;
+    }
+
+    setPasswordSaving(true);
+    try {
+      await changeAdminPassword(currentPassword, newPassword);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setPasswordMessage('تم تغيير كلمة المرور. استخدم كلمة المرور الجديدة في تسجيل الدخول القادم.');
+    } catch (error) {
+      setPasswordMessage(error instanceof Error ? error.message : 'تعذر تغيير كلمة المرور.');
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -669,12 +696,50 @@ function ToolsTab() {
 
       <div className="rounded-xl bg-white p-6 shadow-md">
         <h3 className="mb-2 text-lg font-bold text-gray-700">🔒 كلمة مرور المشرف</h3>
-        <p className="text-sm text-gray-600">
-          تُضبط كلمة المرور وسر الجلسة من متغيرات البيئة في إعدادات Netlify باسم
-          <code className="mx-1" dir="ltr">ADMIN_PASSWORD</code>
-          و
-          <code className="mx-1" dir="ltr">ADMIN_SESSION_SECRET</code>.
+        <p className="mb-4 text-sm text-gray-600">
+          تُستخدم <code dir="ltr">ADMIN_PASSWORD</code> في Netlify للدخول الأول فقط. بعد تغيير كلمة المرور هنا، لن تحتاج إلى تعديل إعدادات Netlify مرة أخرى.
         </p>
+        <form onSubmit={handleChangePassword} className="max-w-xl space-y-3">
+          <input
+            type="password"
+            autoComplete="current-password"
+            value={currentPassword}
+            onChange={event => setCurrentPassword(event.target.value)}
+            placeholder="كلمة المرور الحالية"
+            aria-label="كلمة المرور الحالية"
+            maxLength={128}
+            required
+            className="w-full rounded-lg border p-3"
+          />
+          <input
+            type="password"
+            autoComplete="new-password"
+            value={newPassword}
+            onChange={event => setNewPassword(event.target.value)}
+            placeholder="كلمة المرور الجديدة (12 حرفًا على الأقل)"
+            aria-label="كلمة المرور الجديدة"
+            minLength={12}
+            maxLength={128}
+            required
+            className="w-full rounded-lg border p-3"
+          />
+          <input
+            type="password"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={event => setConfirmPassword(event.target.value)}
+            placeholder="تأكيد كلمة المرور الجديدة"
+            aria-label="تأكيد كلمة المرور الجديدة"
+            minLength={12}
+            maxLength={128}
+            required
+            className="w-full rounded-lg border p-3"
+          />
+          <button type="submit" disabled={passwordSaving} className="rounded-lg bg-blue-600 px-6 py-3 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60">
+            {passwordSaving ? 'جارٍ التغيير...' : 'تغيير كلمة المرور'}
+          </button>
+          {passwordMessage && <p className="text-sm" role="status">{passwordMessage}</p>}
+        </form>
       </div>
 
       <div className="rounded-xl bg-white p-6 shadow-md">
