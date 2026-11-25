@@ -10,7 +10,7 @@ collections:
     label: "المنشورات الأدبية"
     folder: "content/publications"
     create: true
-    # هذا السطر يقوم بإنشاء ملف JSON تلقائياً ليقرأه الموقع
+    # هذا السطر يجعله يحفظ كملف JSON بدلاً من Markdown ليتوافق مع الكود
     format: "json" 
     extension: "json"
     fields:
@@ -18,4 +18,4 @@ collections:
       - { label: "العنوان", name: "title", widget: "string" }
       - { label: "المؤلف", name: "author", widget: "string" }
       - { label: "الوصف", name: "description", widget: "text" }
-      - { label: "صورة الغلاف", name: "image", widget: "image" }
+      - { label: "صورة الغلاف", name: "image", widget: "image" } # هذا هو زر الرفع المباشر
